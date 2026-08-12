@@ -37,7 +37,7 @@ export default async function RecetaPage({ params }: { params: Promise<{ token: 
           ))}
         </div>
         <p className="mt-8 text-xs text-slate-500">
-          Para imprimir presioná Ctrl + P. Código de verificación: {rec.token.slice(0, 8)}
+          Para imprimir presioná Ctrl + P. Código de verificación: {rec?.token.slice(0, 8)}
         </p>
       </div>
     </main>
