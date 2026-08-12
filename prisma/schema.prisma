@@ -170,3 +170,91 @@ model Appointment {
   estado      String         @default("programado")
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  patient     Patient        @relation(fields: [patientId], references: [id])
+  doctor      Doctor         @relation(fields: [doctorId], references: [id])
+  consultation Consultation?
+}
+
+model Consultation {
+  id             Int              @id @default(autoincrement())
+  appointmentId  Int?             @unique
+  patientId      Int
+  doctorId       Int
+  startAt        DateTime         @default(now())
+  endAt          DateTime?
+  evolutionNotes String?
+  diagnosis      String?
+  treatmentPlan  String?
+  observaciones  String?
+  status         String           @default("en_proceso")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  appointment    Appointment?     @relation(fields: [appointmentId], references: [id])
+  patient        Patient          @relation(fields: [patientId], references: [id])
+  doctor         Doctor           @relation(fields: [doctorId], references: [id])
+  prescriptions  Prescription[]
+  attachments    Attachment[]
+  billingEntry   BillingEntry?
+}
+
+model Prescription {
+  id             Int      @id @default(autoincrement())
+  consultationId Int
+  doctorId       Int
+  patientId      Int
+  tokenHash      String   @unique
+  token          String?  @unique
+  expiresAt      DateTime
+  status         String   @default("emitida")
+  issuedAt       DateTime @default(now())
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  doctor         Doctor       @relation(fields: [doctorId], references: [id])
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  items          PrescriptionItem[]
+}
+
+model PrescriptionItem {
+  id             Int          @id @default(autoincrement())
+  prescriptionId Int
+  medicamento    String
+  dosis          String
+  frecuencia     String
+  duracion       String
+  instrucciones  String?
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+}
+
+model Attachment {
+  id             Int      @id @default(autoincrement())
+  consultationId Int
+  patientId      Int
+  uploadedById   Int?
+  fileName       String
+  storageKey     String
+  mimeType       String
+  sizeBytes      Int
+  createdAt      DateTime @default(now())
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  uploadedBy     User?        @relation(fields: [uploadedById], references: [id])
+}
+
+model BillingEntry {
+  id              Int       @id @default(autoincrement())
+  consultationId  Int       @unique
+  patientId       Int
+  doctorId        Int
+  healthInsurerId Int
+  planId          Int?
+  nroOrdenBono    String?
+  monto           Float     @default(0)
+  estado          String    @default("pendiente_bono")
+  fechaCargaBono  DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  consultation    Consultation  @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  patient         Patient       @relation(fields: [patientId], references: [id])
+  doctor          Doctor        @relation(fields: [doctorId], references: [id])
+  healthInsurer   HealthInsurer @relation(fields: [healthInsurerId], references: [id])
+  plan            InsurancePlan? @relation(fields: [planId], references: [id])
+}
