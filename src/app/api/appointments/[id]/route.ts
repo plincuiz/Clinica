@@ -47,14 +47,19 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     if (isNaN(startAt.getTime())) return NextResponse.json({ error: 'Fecha u hora inválida' }, { status: 400 })
     const endAt = new Date(startAt.getTime() + durationMin * 60000)
 
-    const overlap = await prisma.$queryRaw`
-      SELECT id FROM Appointment
-      WHERE doctorId = ${doctorId}
-        AND id <> ${turnoId}
-        AND estado NOT IN ('cancelado','ausente')
-        AND datetime(startAt) < datetime(${endAt.toISOString()})
-        AND datetime(startAt, '+' || durationMin || ' minutes') > datetime(${startAt.toISOString()})
-      LIMIT 1`
+    const overlap = await prisma.$queryRawUnsafe(
+      `SELECT id FROM "Appointment"
+       WHERE "doctorId" = $1
+         AND id <> $2
+         AND estado NOT IN ('cancelado','ausente')
+         AND "startAt" < $3
+         AND ("startAt" + ("durationMin" * interval '1 minute')) > $4
+       LIMIT 1`,
+      doctorId,
+      turnoId,
+      endAt,
+      startAt
+    )
     if (Array.isArray(overlap) && overlap.length > 0) {
       return NextResponse.json({ error: 'Se superpone con otro turno del médico.' }, { status: 400 })
     }
