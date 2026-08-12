@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  description String?
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          Int              @id @default(autoincrement())
+  code        String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([roleId, permissionId])
+}
+
+model User {
+  id                  Int            @id @default(autoincrement())
+  dni                 String         @unique
+  passwordHash        String
+  nombre              String
+  apellido            String
+  email               String?        @unique
+  telefono            String?
+  roleId              Int
+  active              Boolean        @default(true)
+  failedAttempts      Int            @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  role                Role           @relation(fields: [roleId], references: [id])
+  doctor              Doctor?
+  attachments         Attachment[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  auditLogs           AuditLog[]
+}
+
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  action    String
+  tableName String?
+  recordId  Int?
+  ip        String?
+  userAgent String?
+  details   String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model HealthInsurer {
+  id             Int             @id @default(autoincrement())
+  name           String          @unique
+  cuit           String?
+  direccion      String?
+  telefono       String?
+  email          String?
+  active         Boolean         @default(true)
+  patients       Patient[]
+  billingEntries BillingEntry[]
+  plans          InsurancePlan[]
+}
+
+model InsurancePlan {
+  id              Int           @id @default(autoincrement())
+  healthInsurerId Int
+  name            String
+  active          Boolean       @default(true)
+  healthInsurer   HealthInsurer @relation(fields: [healthInsurerId], references: [id], onDelete: Cascade)
+  patients        Patient[]
+  billingEntries  BillingEntry[]
+  @@unique([healthInsurerId, name])
+}
+
+model Patient {
+  id              Int             @id @default(autoincrement())
+  dni             String          @unique
+  nombre          String
+  apellido        String
+  email           String?
+  telefono        String?
+  direccion       String?
+  fechaNacimiento DateTime?
+  sexo            String?
+  healthInsurerId Int
+  planId          Int?
+  nroAfiliado     String?
+  active          Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  healthInsurer   HealthInsurer   @relation(fields: [healthInsurerId], references: [id])
+  plan            InsurancePlan?  @relation(fields: [planId], references: [id])
+  appointments    Appointment[]
+  consultations   Consultation[]
+  prescriptions   Prescription[]
+  attachments     Attachment[]
+  billingEntries  BillingEntry[]
+}
+
+model Specialty {
+  id      Int               @id @default(autoincrement())
+  name    String            @unique
+  doctors DoctorSpecialty[]
+}
+
+model DoctorSpecialty {
+  id          Int       @id @default(autoincrement())
+  doctorId    Int
+  specialtyId Int
+  matricula   String?
+  doctor      Doctor    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  specialty   Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+  @@unique([doctorId, specialtyId])
+}
+
+model Doctor {
+  id             Int               @id @default(autoincrement())
+  userId         Int               @unique
+  active         Boolean           @default(true)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialties    DoctorSpecialty[]
+  appointments   Appointment[]
+  consultations  Consultation[]
+  prescriptions  Prescription[]
+  billingEntries BillingEntry[]
+}
+
+model Appointment {
+  id          Int            @id @default(autoincrement())
+  patientId   Int
+  doctorId    Int
+  startAt     DateTime
+  durationMin Int            @default(30)
+  motivo      String?
+  prioridad   String         @default("control")
+  estado      String         @default("programado")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  patient      Patient        @relation(fields: [patientId], references: [id])
+  doctor       Doctor         @relation(fields: [doctorId], references: [id])
+  consultation Consultation?
+}
+
+model Consultation {
+  id             Int              @id @default(autoincrement())
+  appointmentId  Int?             @unique
+  patientId      Int
+  doctorId       Int
+  startAt        DateTime         @default(now())
+  endAt          DateTime?
+  evolutionNotes String?
+  diagnosis      String?
+  treatmentPlan  String?
+  observaciones  String?
+  status         String           @default("en_proceso")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  appointment    Appointment?     @relation(fields: [appointmentId], references: [id])
+  patient        Patient          @relation(fields: [patientId], references: [id])
+  doctor         Doctor           @relation(fields: [doctorId], references: [id])
+  prescriptions  Prescription[]
+  attachments    Attachment[]
+  billingEntry   BillingEntry?
+}
+
+model Prescription {
+  id             Int      @id @default(autoincrement())
+  consultationId Int
+  doctorId       Int
+  patientId      Int
+  tokenHash      String   @unique
+  token          String?  @unique
+  expiresAt      DateTime
+  status         String   @default("emitida")
+  issuedAt       DateTime @default(now())
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  doctor         Doctor       @relation(fields: [doctorId], references: [id])
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  items          PrescriptionItem[]
+}
+
+model PrescriptionItem {
+  id             Int          @id @default(autoincrement())
+  prescriptionId Int
+  medicamento    String
+  dosis          String
+  frecuencia     String
+  duracion       String
+  instrucciones  String?
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+}
+
+model Attachment {
+  id             Int      @id @default(autoincrement())
+  consultationId Int
+  patientId      Int
+  uploadedById   Int?
+  fileName       String
+  storageKey     String
+  mimeType       String
+  sizeBytes      Int
+  createdAt      DateTime @default(now())
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  patient      Patient      @relation(fields: [patientId], references: [id])
+  uploadedBy   User?        @relation(fields: [uploadedById], references: [id])
+}
+
+model BillingEntry {
+  id              Int       @id @default(autoincrement())
+  consultationId  Int       @unique
+  patientId       Int
+  doctorId        Int
+  healthInsurerId Int
+  planId          Int?
+  nroOrdenBono    String?
+  monto           Float     @default(0)
+  estado          String    @default("pendiente_bono")
+  fechaCargaBono  DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  consultation  Consultation  @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  patient       Patient       @relation(fields: [patientId], references: [id])
+  doctor        Doctor        @relation(fields: [doctorId], references: [id])
+  healthInsurer HealthInsurer @relation(fields: [healthInsurerId], references: [id])
+  plan          InsurancePlan? @relation(fields: [planId], references: [id])
+}

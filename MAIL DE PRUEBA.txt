@@ -1,0 +1,37 @@
+============================================
+  DATOS DEL CORREO DE PRUEBA
+  (NO COMPARTIR ESTE ARCHIVO)
+============================================
+
+Email:              pepepruebarcia@gmail.com
+Clave aplicación:   fmezyyjcmgjeiqnu
+
+(IMPORTANTE: la clave va TODO JUNTO, sin espacios)
+
+--------------------------------------------
+LÍNEAS PARA PEGAR EN EL ARCHIVO .env:
+--------------------------------------------
+
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=pepepruebarcia@gmail.com
+EMAIL_PASS=fmezyyjcmgjeiqnu
+EMAIL_FROM=Sistema Clinica
+
+--------------------------------------------
+RECORDATORIOS:
+--------------------------------------------
+- Esta es la CLAVE DE APLICACIÓN de Google,
+  NO la contraseña del correo.
+- Si cambiás la contraseña de Google, esta clave
+  deja de funcionar y hay que generar otra en:
+  myaccount.google.com/apppasswords
+- El archivo .env NO debe subirse a GitHub
+  (ya está excluido por .gitignore).
+- Para usarlo: editar el archivo .env, pegar las
+  líneas de arriba y reiniciar el sistema
+  (Ctrl + C y luego npm run start).
+
+--------------------------------------------
+Fecha de creación: Agosto 2026
+--------------------------------------------
