@@ -1,0 +1,3 @@
+[33m3ced0b9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix: adjuntos con Vercel Blob usando proxy (evita API rota)
+[33m1075ff1[m Adjuntos persistentes con Vercel Blob (hibrido local)
+[33mec43cf5[m Fix: finalizar consulta desde la ficha y sala con pendientes atrasados
