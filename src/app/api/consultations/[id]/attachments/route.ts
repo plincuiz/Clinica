@@ -38,7 +38,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   let storageKey: string
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const blob = await put(`adjuntos/${key}`, file, { access: 'private' })
+    const blob = await put(`adjuntos/${key}`, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    })
     storageKey = blob.url
   } else {
     const dir = path.join(process.cwd(), 'storage')

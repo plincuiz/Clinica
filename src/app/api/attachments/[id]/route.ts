@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { get } from '@vercel/blob'
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params
@@ -16,21 +15,25 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const att = await prisma.attachment.findUnique({ where: { id: Number(id) } })
   if (!att) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
+  // Storage en Vercel Blob: hacer proxy desde la URL pública
   if (att.storageKey.startsWith('http')) {
     try {
-      const blob = await get(att.storageKey)
-      return new NextResponse(blob.body, {
+      const res = await fetch(att.storageKey)
+      if (!res.ok) return NextResponse.json({ error: 'Archivo no disponible' }, { status: 404 })
+      const buf = await res.arrayBuffer()
+      return new NextResponse(new Uint8Array(buf), {
         headers: {
-          'Content-Type': blob.contentType ?? att.mimeType,
+          'Content-Type': att.mimeType,
           'Content-Disposition': `inline; filename="${encodeURIComponent(att.fileName)}"`,
           'Cache-Control': 'private, max-age=3600',
         },
       })
     } catch {
-      return NextResponse.json({ error: 'Archivo no disponible en el storage' }, { status: 404 })
+      return NextResponse.json({ error: 'Archivo no disponible' }, { status: 404 })
     }
   }
 
+  // Storage local (fallback para instalación en ZIP)
   const buf = await readFile(path.join(process.cwd(), 'storage', att.storageKey)).catch(() => null)
   if (!buf) return NextResponse.json({ error: 'Archivo no disponible' }, { status: 404 })
 
