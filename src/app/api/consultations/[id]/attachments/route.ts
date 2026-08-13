@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/auth'
 import { randomBytes } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { put } from '@vercel/blob'
 
 const MAX = 10 * 1024 * 1024
 const permitidos = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp']
@@ -34,10 +35,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   const ext = file.name.split('.').pop() ?? 'bin'
   const key = `${Date.now()}_${randomBytes(8).toString('hex')}.${ext}`
-  const dir = path.join(process.cwd(), 'storage')
-  await mkdir(dir, { recursive: true })
-  const buf = Buffer.from(await file.arrayBuffer())
-  await writeFile(path.join(dir, key), buf)
+
+  let storageKey: string
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const blob = await put(`adjuntos/${key}`, file, { access: 'private' })
+    storageKey = blob.url
+  } else {
+    const dir = path.join(process.cwd(), 'storage')
+    await mkdir(dir, { recursive: true })
+    const buf = Buffer.from(await file.arrayBuffer())
+    await writeFile(path.join(dir, key), buf)
+    storageKey = key
+  }
 
   const att = await prisma.attachment.create({
     data: {
@@ -45,7 +54,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       patientId: cons.patientId,
       uploadedById: user.id,
       fileName: file.name,
-      storageKey: key,
+      storageKey,
       mimeType: file.type,
       sizeBytes: file.size,
     },
