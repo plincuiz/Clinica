@@ -48,8 +48,13 @@ export default async function SalaPage() {
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const end = new Date(start.getTime() + 86400000)
 
-  const where: any = { startAt: { gte: start, lt: end } }
-  if (doctor) where.doctorId = doctor.id
+  const where: any = {
+    ...(doctor ? { doctorId: doctor.id } : {}),
+    OR: [
+      { startAt: { gte: start, lt: end } },
+      { estado: { in: ['en_espera', 'en_atencion'] } },
+    ],
+  }
 
   const turnos = await prisma.appointment.findMany({
     where,
@@ -65,6 +70,8 @@ export default async function SalaPage() {
     .filter((t) => ordenPendiente[t.estado] === undefined)
     .sort((a, b) => b.startAt.getTime() - a.startAt.getTime())
 
+  const esHoy = (d: Date) => d >= start && d < end
+
   const fila = (t: (typeof turnos)[number]) => {
     const esMedico = doctor?.id === t.doctorId
     const anteriorPendiente = turnos.some(
@@ -77,6 +84,11 @@ export default async function SalaPage() {
     return (
       <tr key={t.id} className="hover:bg-slate-50">
         <td className="px-6 py-4 text-sm text-slate-900">
+          {!esHoy(new Date(t.startAt)) && (
+            <span className="mr-2 px-2 py-0.5 rounded-full text-xs bg-orange-100 text-orange-700 font-semibold">
+              {new Date(t.startAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+            </span>
+          )}
           {new Date(t.startAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
         </td>
         <td className="px-6 py-4 text-sm text-slate-900">{t.patient.apellido}, {t.patient.nombre}</td>
@@ -99,7 +111,7 @@ export default async function SalaPage() {
       <Navbar />
       <Volver />
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-slate-800 mb-4">Sala de Espera — Hoy</h1>
+        <h1 className="text-2xl font-bold text-slate-800 mb-4">Sala de Espera — Hoy y pendientes atrasados</h1>
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
@@ -120,7 +132,7 @@ export default async function SalaPage() {
               {cerrados.length > 0 && (
                 <tr>
                   <td colSpan={6} className="bg-slate-200 px-6 py-2 text-xs font-bold text-slate-600 uppercase">
-                    Atendidos / cerrados
+                    Atendidos / cerrados de hoy
                   </td>
                 </tr>
               )}

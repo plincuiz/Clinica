@@ -7,6 +7,7 @@ import ConsultForm from './ConsultForm'
 import PrescriptionForm from './PrescriptionForm'
 import AttachmentsSection from './AttachmentsSection'
 import EmailButton from './EmailButton'
+import FinalizarButton from './FinalizarButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,16 +40,23 @@ export default async function ConsultaPage({ params }: { params: Promise<{ id: s
       <Volver />
       <div className="p-6 max-w-4xl mx-auto space-y-6">
         <div className="bg-white rounded-lg shadow p-6">
-          <h1 className="text-xl font-bold text-slate-800">Consulta</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Paciente: <b>{cons.patient.nombre} {cons.patient.apellido}</b> (DNI {cons.patient.dni}) — {cons.patient.healthInsurer.name}
-          </p>
-          <p className="text-sm text-slate-600">
-            Médico: <b>{cons.doctor.user.nombre} {cons.doctor.user.apellido}</b>
-          </p>
-          <p className="text-sm text-slate-600">
-            Inicio: {new Date(cons.startAt).toLocaleString('es-AR')}
-          </p>
+          <div className="flex justify-between items-start gap-4 flex-wrap">
+            <div>
+              <h1 className="text-xl font-bold text-slate-800">Consulta</h1>
+              <p className="mt-2 text-sm text-slate-600">
+                Paciente: <b>{cons.patient.nombre} {cons.patient.apellido}</b> (DNI {cons.patient.dni}) — {cons.patient.healthInsurer.name}
+              </p>
+              <p className="text-sm text-slate-600">
+                Médico: <b>{cons.doctor.user.nombre} {cons.doctor.user.apellido}</b>
+              </p>
+              <p className="text-sm text-slate-600">
+                Inicio: {new Date(cons.startAt).toLocaleString('es-AR')}
+              </p>
+            </div>
+            {puedeNotas && cons.status === 'en_proceso' && (
+              <FinalizarButton turnoId={cons.appointmentId} />
+            )}
+          </div>
         </div>
 
         {puedeNotas ? (
