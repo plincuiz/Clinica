@@ -19,7 +19,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   if (att.storageKey.startsWith('http')) {
     try {
       const token = process.env.BLOB_READ_WRITE_TOKEN ?? ''
-      const result: any = await get(att.storageKey, { token })
+      const result: any = await get(att.storageKey, { token, access: 'private' })
       const stream = result?.stream ?? result?.body
       const contentType = result?.blob?.contentType ?? result?.contentType ?? att.mimeType
       if (!stream) return NextResponse.json({ error: 'Archivo no disponible' }, { status: 404 })
