@@ -43,13 +43,26 @@ export async function GET(req: Request) {
   }))
 
   const headers = ['Fecha', 'Paciente', 'DNI', 'Médico', 'Obra_Social', 'Plan', 'Nro_Orden', 'Monto', 'Estado']
+  // Escape all special CSV characters to prevent CSV injection/XSS
+  const escapeCsv = (val: string) => {
+    // Replace backslash first, then double quotes, then commas and semicolons
+    const escaped = val
+      .replace(/\\/g, '\\\\')  // Escape backslashes
+      .replace(/"/g, '\\"')  // Escape double quotes
+      .replace(/,/g, '\\,')     // Escape commas (CSV separator)
+      .replace(/;/g, '\\;')    // Escape semicolons
+      .replace(/\n/g, ' ')     // Replace newlines
+      .replace(/\r/g, ' ')     // Replace carriage returns
+      .replace(/\t/g, ' ')     // Replace tabs
+    return `"${escaped}"`
+  }
   const csv = [
     headers.join(';'),
     ...rows.map((r) =>
       headers
         .map((h) => {
           const val = String(r[h as keyof typeof r] ?? '')
-          return val.includes(';') || val.includes('"') || val.includes('\n') ? `"${val.replace(/"/g, '""')}"` : val
+          return escapeCsv(val)
         })
         .join(';')
     ),

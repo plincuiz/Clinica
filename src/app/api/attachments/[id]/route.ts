@@ -35,6 +35,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     }
   }
 
+  // Security: Prevent path traversal in local file access
+  if (att.storageKey.includes('..') || att.storageKey.startsWith('/') || !att.storageKey) {
+    return NextResponse.json({ error: 'Acceso a archivo no válido' }, { status: 403 })
+  }
+
   const buf = await readFile(path.join(process.cwd(), 'storage', att.storageKey)).catch(() => null)
   if (!buf) return NextResponse.json({ error: 'Archivo no disponible' }, { status: 404 })
 
